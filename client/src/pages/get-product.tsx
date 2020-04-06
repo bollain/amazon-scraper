@@ -18,7 +18,6 @@ const GetProduct: React.FC<GetProductProps> = () => {
   const [ASIN, setAsin] = useState('')
   if(loading) return <Loading />
 
-if (error) return <p>ERROR: {error.message}</p>;
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -38,11 +37,14 @@ if (error) return <p>ERROR: {error.message}</p>;
           value="Submit"
         />
       </form>
+      { error && <p>ERROR: {error.message}</p>}
       { data && data.getProduct
         && 
           <table>
             <ProductTableHeader />
-            <Product key={data.getProduct.ASIN} product={data.getProduct}/> 
+            <tbody>
+              <Product key={data.getProduct.ASIN} product={data.getProduct}/> 
+            </tbody>
           </table>}
       <a href="/products">Go to products list</a>
     </div>

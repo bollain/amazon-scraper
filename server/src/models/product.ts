@@ -14,6 +14,7 @@ interface IScrapeResult {
   rank: string
   category: string
   content: string[]
+  title: string
 }
 
 export default class Product extends Model<IProduct> {
@@ -46,15 +47,24 @@ export default class Product extends Model<IProduct> {
       x(`https://www.amazon.ca/dp/${ASIN}`, {
         rank: '#SalesRank',
         category: '.nav-a-content',
-        content: x('.content ul', ['li'])
+        content: x('.content ul', ['li']),
+        title: 'title'
       })((err: any, result: IScrapeResult) => {
         if (err) reject(err)
         // console.log(result.category)
-        // console.log(result)
-        const product = this.parseProductContent(ASIN, result)
-        resolve(product)
+        console.log(result)
+        if (this.doesProductExist(result.title)) {
+          const product = this.parseProductContent(ASIN, result)
+          resolve(product)
+        } else {
+          reject("Product does not exist")
+        }
       })
     })
+  }
+
+  private doesProductExist(title: string): boolean {
+    return !title.toLowerCase().includes('not found')
   }
 
   private parseProductContent(ASIN: string, result: IScrapeResult): IProduct {
