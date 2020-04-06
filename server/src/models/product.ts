@@ -1,7 +1,9 @@
 const  Xray = require('x-ray')
 const x = Xray()
+import { Sequelize, Model, DataTypes } from 'sequelize';
 
 interface IProduct {
+  id?: number
   ASIN: string
   category?: string
   dimensions?: string
@@ -14,24 +16,32 @@ interface IScrapeResult {
   content: string[]
 }
 
-export default class Product {
-  async getProduct(ASIN: string) {
-    const prod = await this.scrapeProductContent(ASIN)
-    console.log(prod)
+export default class Product extends Model<IProduct> {
+  public id!: number
+  public ASIN!: string
+  public dimensions?: string
+  public rank?: string
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 
-    return {
-      ASIN: "B00CH9QWOU",
-      category: "Home",
-      dimensions: "30.5 x 27.9 x 34.3 cm",
-      rank: "#690 in Home"
+  async getProduct(ASIN: string) {
+    const existingProduct = await Product.findOne({ where: { ASIN }})
+
+    if (!existingProduct) {
+      const scrapedProduct = await this.scrapeProductContent(ASIN)
+      console.log(scrapedProduct)
+      await Product.create(scrapedProduct)
+      return scrapedProduct
     }
+
+    return existingProduct
   }
 
   getAllProducts() {
-    return products
+    return Product.findAll();
   }
 
-  private scrapeProductContent(ASIN: string) {
+  private scrapeProductContent(ASIN: string): Promise<IProduct> {
     return new Promise((resolve, reject) => {
       x(`https://www.amazon.ca/dp/${ASIN}`, {
         rank: '#SalesRank',
@@ -40,7 +50,7 @@ export default class Product {
       })((err: any, result: IScrapeResult) => {
         if (err) reject(err)
         // console.log(result.category)
-        console.log(result)
+        // console.log(result)
         const product = this.parseProductContent(ASIN, result)
         resolve(product)
       })
@@ -80,21 +90,42 @@ export default class Product {
     let rankArray = rawRank.split('\n')
     // Usually there is more than one rank (e.g. second rank is for a more narrow category)
     // However, the first rank will take precedence
-    return rankArray.find(element => element.includes('#'))
+    let rank = rankArray.find(element => element.includes('#'))
+    // Remove the hyperlink that usually always follows rank
+    const startOfHyperlink = rank?.indexOf('(')
+    return rank?.substr(0, startOfHyperlink);
   }
 }
 
-const products = [
+const sequelize = new Sequelize('jungle', 'root', undefined, {
+  host: 'localhost',
+  dialect: 'mariadb'
+});
+
+Product.init(
   {
-    ASIN: "B07X2SMSDR",
-    category: "Beauty",
-    dimensions: "25.2 x 17.4 x 4.4 cm ; 830 g",
-    rank: "#3,235 in Beauty & Personal Care"
+  id: {
+    type: DataTypes.INTEGER.UNSIGNED,
+    autoIncrement: true,
+    primaryKey: true,
   },
-  {
-    ASIN: "B00CH9QWOU",
-    category: "Home",
-    dimensions: "30.5 x 27.9 x 34.3 cm",
-    rank: "#690 in Home"
+  ASIN: {
+    type: new DataTypes.STRING,
+    allowNull: false,
   },
-]
+  category: {
+    type: new DataTypes.STRING,
+    allowNull: true
+  },
+  dimensions: {
+    type: new DataTypes.STRING,
+    allowNull: true
+  },
+  rank: {
+    type: new DataTypes.STRING,
+    allowNull: true
+  }
+}, {
+  tableName: 'products',
+  sequelize: sequelize
+})
