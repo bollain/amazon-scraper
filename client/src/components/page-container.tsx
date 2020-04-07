@@ -4,7 +4,7 @@ import styled from 'react-emotion';
 export default function PageContainer (props: any) {
   return (
     <Fragment>
-      <Bar/>
+      <Bar>Amazon ASIN Searcher</Bar>
       <Container>{props.children}</Container>
     </Fragment>
   );
@@ -18,6 +18,8 @@ const Bar = styled('div')({
   flexShrink: 0,
   height: 30,
   backgroundColor: 'orange',
+  textAlign: 'center',
+  paddingTop: '10px'
 });
 
 const Container = styled('div')({

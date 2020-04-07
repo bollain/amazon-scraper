@@ -30,7 +30,6 @@ export default class Product extends Model<IProduct> {
 
     if (!existingProduct) {
       const scrapedProduct = await this.scrapeProductContent(ASIN)
-      console.log(scrapedProduct)
       await Product.create(scrapedProduct)
       return scrapedProduct
     }
@@ -51,8 +50,6 @@ export default class Product extends Model<IProduct> {
         title: 'title'
       })((err: any, result: IScrapeResult) => {
         if (err) reject(err)
-        // console.log(result.category)
-        console.log(result)
         if (this.doesProductExist(result.title)) {
           const product = this.parseProductContent(ASIN, result)
           resolve(product)
